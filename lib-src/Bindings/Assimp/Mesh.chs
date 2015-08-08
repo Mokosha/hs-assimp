@@ -28,7 +28,8 @@ import Foreign.Storable
                       PrimitiveType_LINE as Line,
                       PrimitiveType_TRIANGLE as Triangle,
                       PrimitiveType_POLYGON as Polygon,
-                      _aiPrimitiveType_Force32Bit as InvalidPrimitiveType} deriving (Eq, Read, Show, Ord) #}
+                      _aiPrimitiveType_Force32Bit as InvalidPrimitiveType}
+                      deriving (Bounded, Eq, Read, Show, Ord) #}
 
 data Vertex = Vertex { position :: Vector3D
                      , normal :: Maybe Vector3D
@@ -38,7 +39,7 @@ data Vertex = Vertex { position :: Vector3D
                      , textureCoord :: [Vector3D]
                      } deriving (Show)
 
-data Face = Face [Int] deriving (Eq, Read, Show)
+newtype Face = Face { getIndexList :: [Int] } deriving (Eq, Read, Show)
 
 instance Storable Face where
   sizeOf _ = {#sizeof Face #}
@@ -97,7 +98,11 @@ instance Storable Mesh where
     typeFlags <- fromIntegral <$> ({#get Mesh->mPrimitiveTypes #} p)
     print typeFlags
     print "Mesh 2"
-    let primitiveTypeSet = S.fromList $ filter ((/= 0) . (typeFlags .&.) . fromEnum) $ enumFrom Point
+    let firstPrimitiveType = minBound :: PrimitiveType
+        lastPrimitiveType = pred (maxBound :: PrimitiveType)
+        primitiveTypeSet =
+            S.fromList $ filter ((/= 0) . (typeFlags .&.) . fromEnum)
+            $ [firstPrimitiveType..lastPrimitiveType]
     print "Mesh 3"
     numVertices <- fromIntegral <$> ({#get Mesh->mNumVertices #} p)
     print $ "num vertices: " ++ show numVertices
